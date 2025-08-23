@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url';
 const isDev = process.env.NODE_ENV === 'development';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Base URL for backend API requests
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
+
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = (): void => {
@@ -63,7 +66,7 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('chat:send-message', async (_, messageData: { message: string, providerId: string, modelId: string }) => {
   try {
-    const response = await fetch('http://localhost:3010/api/chat', {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +93,7 @@ ipcMain.handle('chat:upload-document', async (_, filePath: string) => {
     const blob = await fileData.blob();
     formData.append('document', blob);
 
-    const response = await fetch('http://localhost:3010/api/upload', {
+    const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       body: formData,
     });
