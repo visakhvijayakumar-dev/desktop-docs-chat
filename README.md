@@ -2,6 +2,8 @@
 
 A local RAG (Retrieval-Augmented Generation) chat application built with Electron, providing private conversations with multiple LLM providers and document retrieval capabilities.
 
+<img width="1196" height="771" alt="image" src="https://github.com/user-attachments/assets/7928c90c-cb37-4e7e-873d-733128facf13" />
+
 ## Features
 
 ### Phase 1 (Current)
