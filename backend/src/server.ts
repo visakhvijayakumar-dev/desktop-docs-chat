@@ -7,7 +7,8 @@ import { providerService } from "./services/providerService";
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 3001;
+// The API server defaults to port 3010 to align with the frontend configuration
+const PORT = process.env.PORT || 3010;
 
 // Middleware
 app.use(cors());
