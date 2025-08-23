@@ -23,14 +23,15 @@ app.get("/api/health", (req: Request, res: Response) => {
 });
 
 // Chat endpoint
-app.post("/api/chat", (req: Request, res: Response) => {
+app.post("/api/chat", (req: Request, res: Response): void => {
   try {
     const { message, provider } = req.body;
 
     if (!message) {
-      return res.status(400).json({
+      res.status(400).json({
         error: "Message is required",
       });
+      return;
     }
 
     // TODO: Implement AI provider logic
@@ -57,9 +58,12 @@ app.use("*", (req: Request, res: Response) => {
 // Error handling middleware
 app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
   console.error("Unhandled error:", error);
-  res.status(500).json({
-    error: "Internal server error",
-  });
+  if (!res.headersSent) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+  next();
 });
 
 // Start server
