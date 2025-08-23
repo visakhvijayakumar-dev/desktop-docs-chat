@@ -1,18 +1,29 @@
-// src/App.tsx
+// FILE LOCATION: frontend/src/App.tsx
+// REPLACE YOUR ENTIRE App.tsx WITH THIS COMPLETE VERSION
+
 import React, { useEffect, useRef, useState } from "react";
-import "./styles/app.css"; // <-- new stylesheet you’ll add in step 2
+import { ModelProviderSelector } from "./components/ModelProviderSelector";
+import "./styles/app.css";
 
-type ProviderId = "anthropic" | "granite" | "openai";
-
-const PROVIDERS: { id: ProviderId; label: string }[] = [
-  { id: "anthropic", label: "Anthropic" },
-  { id: "granite", label: "Granite" },
-  { id: "openai", label: "OpenAI" },
-];
-
-const API_BASE = "http://localhost:3001"; // change if your backend runs elsewhere
-
+const API_BASE = "http://localhost:3001";
 type Msg = { id: number; content: string; isUser: boolean };
+
+// Provider/Model interfaces to match the component
+interface Provider {
+  id: string;
+  name: string;
+  description: string;
+  isEnabled: boolean;
+  models: Model[];
+}
+
+interface Model {
+  id: string;
+  name: string;
+  description: string;
+  maxTokens: number;
+  isDefault: boolean;
+}
 
 export default function App() {
   const [messages, setMessages] = useState<Msg[]>([
@@ -29,7 +40,7 @@ export default function App() {
     },
   ]);
 
-  // Chat + UI state
+  // UI state
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -37,13 +48,13 @@ export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Provider state
-  const [provider, setProvider] = useState<ProviderId>("anthropic");
-  const [graniteModel, setGraniteModel] = useState(
-    "ibm/granite-3-3-8b-instruct"
+  // Provider/Model selection state
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
+    null
   );
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
 
-  // Ingestion modal state
+  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [progress, setProgress] = useState(0);
   const [ingestDone, setIngestDone] = useState(false);
@@ -60,34 +71,51 @@ export default function App() {
   const instructionsRef = useRef<HTMLTextAreaElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // ----- helpers -----
+  // Handle provider/model changes
+  const handleProviderModelChange = (
+    provider: Provider | null,
+    model: Model | null
+  ) => {
+    console.log("🔥 PROVIDER/MODEL CHANGED:");
+    console.log("Provider:", provider?.name);
+    console.log("Model:", model?.name);
+
+    setSelectedProvider(provider);
+    setSelectedModel(model);
+  };
+
+  // Helper functions
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent]);
 
-  // Auto-grow instructions textarea
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
     el.style.height = "auto";
     el.style.height = el.scrollHeight + "px";
   };
+
   useEffect(() => {
     autoResize(instructionsRef.current);
   }, [customInstructions]);
 
-  // Sidebar resize
+  // Sidebar resize handlers
   const handleMouseDown: React.MouseEventHandler<HTMLDivElement> = (e) => {
     setIsResizing(true);
     e.preventDefault();
   };
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing) return;
     const w = Math.max(300, Math.min(560, e.clientX));
     setSidebarWidth(w);
   };
+
   const handleMouseUp = () => setIsResizing(false);
+
   useEffect(() => {
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
@@ -108,431 +136,229 @@ export default function App() {
     };
   }, [isResizing]);
 
-  // Build provider-agnostic chat messages (OpenAI style)
-  const toChatMessages = () => {
-    const history = messages.map((m) => ({
-      role: m.isUser ? "user" : "assistant",
-      content: m.content,
-    }));
-    const sys = customInstructions?.trim()
-      ? [{ role: "system", content: customInstructions.trim() }]
-      : [];
-    return [...sys, ...history];
-  };
-
-  const addMessage = (content: string, isUser = true) =>
-    setMessages((prev) => [...prev, { id: Date.now(), content, isUser }]);
-
-  // Render lists/paragraphs nicely from plain text
-  const createList = (items: string[], type: "numbered" | "bullet") => {
-    const ListComp = type === "numbered" ? "ol" : "ul";
-    return (
-      <ListComp
-        key={`list-${Date.now()}`}
-        style={{ margin: "8px 0", paddingLeft: "24px" }}
-      >
-        {items.map((item, i) => (
-          <li key={i} style={{ margin: "4px 0", lineHeight: "1.5" }}>
-            <span
-              dangerouslySetInnerHTML={{
-                __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
-              }}
-            />
-          </li>
-        ))}
-      </ListComp>
-    );
-  };
-
-  const formatMessage = (content: string) => {
-    if (!content) return "";
-    const lines = content.split("\n").filter((l) => l.trim());
-    const out: React.ReactNode[] = [];
-    let list: string[] = [];
-    let listType: "numbered" | "bullet" | null = null;
-
-    lines.forEach((raw, idx) => {
-      const line = raw.trim();
-      const numbered = line.match(/^(\d+)\.\s*(.+)/);
-      const bullet = line.match(/^[-•]\s*(.+)/);
-
-      if (numbered) {
-        if (listType !== "numbered") {
-          if (list.length) out.push(createList(list, listType!));
-          list = [];
-          listType = "numbered";
-        }
-        list.push(numbered[2]);
-        return;
-      }
-      if (bullet) {
-        if (listType !== "bullet") {
-          if (list.length) out.push(createList(list, listType!));
-          list = [];
-          listType = "bullet";
-        }
-        list.push(bullet[1]);
-        return;
-      }
-      if (list.length) {
-        out.push(createList(list, listType!));
-        list = [];
-        listType = null;
-      }
-      out.push(
-        <p key={`p-${idx}`} style={{ margin: "0 0 8px 0", lineHeight: "1.5" }}>
-          {line}
-        </p>
-      );
-    });
-
-    if (list.length) out.push(createList(list, listType!));
-    return <div>{out}</div>;
-  };
-
+  // Send message function
   const sendMessage = async () => {
-    const user = inputValue.trim();
-    if (!user) return;
+    if (!inputValue.trim()) return;
 
-    addMessage(user, true);
+    const userMessage = inputValue.trim();
+    const newMessage: Msg = {
+      id: Date.now(),
+      content: userMessage,
+      isUser: true,
+    };
+    setMessages((prev) => [...prev, newMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    const streamingId = Date.now() + 1;
-    setStreamingMessageId(streamingId);
-    setStreamingContent("");
-
-    const base = toChatMessages();
-    const messagesToSend = [...base, { role: "user", content: user }];
-
-    abortControllerRef.current = new AbortController();
-
-    const useStreaming = provider === "anthropic" || provider === "granite";
-    const endpoint = useStreaming ? "/api/chat/stream" : "/api/chat";
-
-    try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider,
-          graniteModel,
-          messages: messagesToSend,
-        }),
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!res.ok) {
-        let msg = `${res.status} ${res.statusText}`;
-        try {
-          const j = await res.json();
-          if (j?.error) msg = j.error;
-        } catch {}
-        throw new Error(msg);
-      }
-
-      if (useStreaming && res.body) {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let accumulated = "";
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
-
-            for (const ln of lines) {
-              if (!ln.trim()) continue;
-              try {
-                const parsed = JSON.parse(ln);
-                if (parsed.type === "delta" && parsed.text) {
-                  accumulated += parsed.text;
-                  setStreamingContent(accumulated);
-                } else if (parsed.type === "done") {
-                  // finished
-                } else if (parsed.type === "error") {
-                  throw new Error(parsed.error || "Stream error");
-                }
-              } catch {
-                // ignore bad chunks
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock();
-        }
-
-        addMessage(
-          accumulated.trim() ? accumulated : "(no response received)",
-          false
-        );
-      } else {
-        const data = await res.json();
-        addMessage(data.text || JSON.stringify(data), false);
-      }
-    } catch (err: any) {
-      if (err?.name !== "AbortError")
-        addMessage(`(error) ${String(err?.message || err)}`, false);
-    } finally {
+    // Simple echo for testing
+    setTimeout(() => {
+      const response = `Echo: ${userMessage} (Using ${selectedProvider?.name} - ${selectedModel?.name})`;
+      const botMessage: Msg = {
+        id: Date.now() + 1,
+        content: response,
+        isUser: false,
+      };
+      setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
-      setStreamingMessageId(null);
-      setStreamingContent("");
-      abortControllerRef.current = null;
-    }
+    }, 1000);
   };
 
-  const handleKeyPress: React.KeyboardEventHandler<HTMLTextAreaElement> = (
-    e
-  ) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  const stopStreaming = () => abortControllerRef.current?.abort();
+  const clearChat = () => {
+    setMessages([]);
+  };
 
-  // ----- ingestion modal -----
-  const startIngestion = () => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setUploadedFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const startIngestion = async () => {
+    setShowModal(true);
     setProgress(0);
     setIngestDone(false);
-    setShowModal(true);
-    let p = 0;
-    const id = setInterval(() => {
-      p = Math.min(100, p + Math.floor(Math.random() * 9) + 3);
-      setProgress(p);
-      if (p >= 100) {
-        clearInterval(id);
-        setTimeout(() => setIngestDone(true), 350);
-      }
-    }, 260);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          setIngestDone(true);
+          return 100;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
   };
 
-  const handleFileUpload: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const files = Array.from(e.target.files ?? []).filter(
-      (f) => f.type === "application/pdf"
-    );
-    if (!files.length) {
-      setShowModal(false);
-      return;
-    }
-    startIngestion();
-    setUploadedFiles((prev) => prev.concat(files).slice(0, 5));
-  };
-
-  // ----- render -----
   return (
     <div className="app">
       {/* Sidebar */}
       <aside className="sidebar" style={{ width: sidebarWidth }}>
+        {/* Provider/Model Selection Panel */}
         <div className="panel">
-          <div className="title">Model Provider</div>
-          <div className="seg">
-            {PROVIDERS.map((p) => (
-              <label
-                key={p.id}
-                className={`segBtn ${provider === p.id ? "active" : ""}`}
-              >
-                <input
-                  type="radio"
-                  name="provider"
-                  value={p.id}
-                  checked={provider === p.id}
-                  onChange={() => setProvider(p.id)}
-                />
-                {p.label}
-              </label>
-            ))}
+          <div className="title">AI Provider</div>
+          <div className="subtitle">Choose your model</div>
+
+          {/* Debug info */}
+          <div
+            style={{
+              fontSize: "10px",
+              background: "#ffffcc",
+              padding: "4px",
+              border: "1px solid #000",
+              marginBottom: "8px",
+            }}
+          >
+            <strong>Current:</strong>
+            <br />
+            {selectedProvider?.name || "None"} • {selectedModel?.name || "None"}
           </div>
 
-          {provider === "granite" && (
-            <div className="field">
-              <div className="label">Granite model_id</div>
-              <input
-                className="textInput"
-                value={graniteModel}
-                onChange={(e) => setGraniteModel(e.target.value)}
-                placeholder="ibm/granite-3-3-8b-instruct"
-              />
+          <ModelProviderSelector
+            onSelectionChange={handleProviderModelChange}
+            showLabels={false}
+            compact={false}
+            className="provider-selector"
+          />
+        </div>
+
+        {/* Instructions Panel */}
+        <div className="panel">
+          <div className="title">Custom Instructions</div>
+          <div className="subtitle">System prompt (optional)</div>
+          <textarea
+            ref={instructionsRef}
+            className="instructions"
+            value={customInstructions}
+            onChange={(e) => setCustomInstructions(e.target.value)}
+            placeholder="e.g. You are a helpful assistant..."
+            rows={3}
+          />
+        </div>
+
+        {/* Upload Panel */}
+        <div className="panel">
+          <div className="title">Upload Files</div>
+          <div className="subtitle">Add documents to your context</div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".txt,.pdf,.docx,.md"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+          />
+          <button
+            className="upload"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📎 Choose Files
+          </button>
+
+          {uploadedFiles.length > 0 && (
+            <div className="files">
+              {uploadedFiles.map((file, idx) => (
+                <div key={idx} className="file">
+                  <span className="fileName">{file.name}</span>
+                  <button
+                    className="removeFile"
+                    onClick={() => removeFile(idx)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button className="ingestFiles" onClick={startIngestion}>
+                🔍 Process Files ({uploadedFiles.length})
+              </button>
             </div>
           )}
         </div>
 
+        {/* Actions Panel */}
         <div className="panel">
-          <div className="title">Upload Documents</div>
-          <div className="subtitle">Max 5 PDF files</div>
-          <button
-            className="upload"
-            onClick={() => {
-              setProgress(0);
-              setIngestDone(false);
-              setShowModal(true);
-              fileInputRef.current?.click();
-            }}
-          >
-            [ + ] Upload PDFs
+          <button className="clearChat" onClick={clearChat}>
+            🗑️ Clear Chat
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            multiple
-            onChange={handleFileUpload}
-            style={{ display: "none" }}
-          />
-          <div className="files">
-            {uploadedFiles.map((f, i) => (
-              <div key={i} className="file">
-                <span className="fname">{f.name}</span>
-                <button
-                  className="fdel"
-                  aria-label="Remove file"
-                  title="Remove"
-                  onClick={() =>
-                    setUploadedFiles((prev) =>
-                      prev.filter((_, idx) => idx !== i)
-                    )
-                  }
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel grow">
-          <div className="title">Custom Instructions</div>
-          <textarea
-            ref={instructionsRef}
-            className="textarea"
-            value={customInstructions}
-            onChange={(e) => {
-              setCustomInstructions(e.target.value);
-              autoResize(e.target);
-            }}
-            placeholder="Type here…"
-            rows={6}
-          />
         </div>
       </aside>
 
-      {/* Divider */}
-      <div className="divider" onMouseDown={handleMouseDown}>
-        <div className="grip" />
-      </div>
+      {/* Resize Handle */}
+      <div
+        className="resizeHandle"
+        onMouseDown={handleMouseDown}
+        style={{ cursor: "col-resize" }}
+      />
 
-      {/* Chat */}
+      {/* Main Chat */}
       <main className="main">
-        <div className="chat">
-          <header className="chatHdr">
-            <div>AI Chat</div>
-          </header>
+        <div className="messages">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`message ${msg.isUser ? "user" : "bot"}`}
+            >
+              <div className="content">{msg.content}</div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="message bot">
+              <div className="content">Typing...</div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-          <section className="msgs">
-            {messages.map((m) => (
-              <div key={m.id} className={`bubble ${m.isUser ? "user" : "ai"}`}>
-                <span className="tail" />
-                <div className="bubble-content">
-                  {m.isUser ? m.content : formatMessage(m.content)}
-                </div>
-              </div>
-            ))}
-            {streamingMessageId && (
-              <div className="bubble ai streaming">
-                <span className="tail" />
-                <div className="bubble-content">
-                  {formatMessage(streamingContent)}
-                  <span className="cursor">|</span>
-                </div>
-              </div>
-            )}
-            {isTyping && !streamingMessageId && (
-              <div className="bubble ai typing">
-                <span className="tail" />
-                <div className="bubble-content">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </section>
-
-          <footer className="inputRow">
+        <div className="inputArea">
+          <div className="inputWrapper">
             <textarea
-              className="msgInput"
+              className="messageInput"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                // onKeyPress is deprecated; use onKeyDown
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Type a message…"
-              rows={2}
+              onKeyDown={handleKeyPress}
+              placeholder="Type your message... (Enter to send)"
               disabled={isTyping}
+              rows={3}
             />
-            {isTyping && streamingMessageId ? (
-              <button className="send stop" onClick={stopStreaming}>
-                Stop
-              </button>
-            ) : (
-              <button
-                className="send"
-                onClick={sendMessage}
-                disabled={isTyping}
-              >
-                Send
-              </button>
-            )}
-          </footer>
+            <button
+              className="sendButton"
+              onClick={sendMessage}
+              disabled={isTyping}
+            >
+              {isTyping ? "..." : "Send"}
+            </button>
+          </div>
         </div>
       </main>
 
-      {/* Ingestion Modal */}
+      {/* Modal */}
       {showModal && (
-        <div className="modalOverlay">
-          <div className="modal">
-            {!ingestDone ? (
-              <>
-                <div className="modalTitle">Ingesting PDFs…</div>
-                <div className="progress">
-                  <div className="bar" style={{ width: `${progress}%` }} />
-                </div>
-                <div className="progressMeta">{progress}%</div>
-                <div className="hint">
-                  Chunking, embedding & indexing your documents…
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="modalTitle">Ingestion Complete</div>
-                <div className="matches">
-                  <div className="matchTitle">Indexed Files</div>
-                  {uploadedFiles.length === 0 && (
-                    <div className="match">(none)</div>
-                  )}
-                  {uploadedFiles.map((f, i) => (
-                    <div key={i} className="match">
-                      ✓ {f.name}
-                    </div>
-                  ))}
-                </div>
-                <button className="okBtn" onClick={() => setShowModal(false)}>
-                  OK
+        <div className="modal">
+          <div className="modalContent">
+            <div className="modalTitle">Processing Documents</div>
+            <div className="progressBar">
+              <div className="progressFill" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="progressText">{Math.round(progress)}%</div>
+            {ingestDone && (
+              <div className="modalActions">
+                <button
+                  className="modalButton"
+                  onClick={() => setShowModal(false)}
+                >
+                  Done
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

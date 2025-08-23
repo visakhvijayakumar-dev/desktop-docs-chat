@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { ModelProviderSelector } from './src/components/ModelProviderSelector';
+
 
 // Enhanced App.jsx with dynamic provider/model selection
 // Frontend calls: POST http://localhost:3001/api/chat with streaming support
@@ -145,6 +147,11 @@ export default function App() {
       const defaultModel = newProvider.models?.find(m => m.isDefault) || newProvider.models?.[0];
       setSelectedModel(defaultModel || null);
     }
+  };
+
+  const handleProviderError = (error) => {
+    console.error('Provider error:', error);
+    setProvidersError(error.message || 'Failed to load providers');
   };
 
   // Handle model selection
@@ -440,33 +447,19 @@ export default function App() {
                 ))}
               </div>
               
-              {/* Model Selection */}
-              {selectedProvider && selectedProvider.models && selectedProvider.models.length > 0 && (
-                <div className="field">
-                  <div className="label">Model ({selectedProvider.models.length} available)</div>
-                  <select 
-                    className="modelSelect" 
-                    value={selectedModel?.id || ""} 
-                    onChange={(e) => handleModelChange(e.target.value)}
-                  >
-                    {selectedProvider.models.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name}
-                        {model.isDefault ? " (default)" : ""}
-                        {model.maxTokens ? ` • ${model.maxTokens >= 1000000 ? (model.maxTokens/1000000).toFixed(1)+'M' : (model.maxTokens/1000).toFixed(0)+'K'} tokens` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Legacy Granite model input for backwards compatibility */}
-              {provider === "granite" && !selectedModel && (
-                <div className="field">
-                  <div className="label">Granite model_id</div>
-                  <input className="textInput" value={graniteModel} onChange={(e) => setGraniteModel(e.target.value)} placeholder="ibm/granite-3-3-8b-instruct" />
-                </div>
-              )}
+              <ModelProviderSelector
+  onSelectionChange={(provider, model) => {
+    setSelectedProvider(provider);
+    setSelectedModel(model);
+    setProvider(provider?.id || 'anthropic');
+    if (provider?.id === 'granite' && model) {
+      setGraniteModel(model.id);
+    }
+  }}
+  showLabels={true}
+  compact={false}
+  className="provider-selector-wrapper"
+/>
 
               {/* Current Selection Display */}
               {selectedProvider && selectedModel && (

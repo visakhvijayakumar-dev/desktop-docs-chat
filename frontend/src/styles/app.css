@@ -1,0 +1,475 @@
+/* FILE LOCATION: frontend/src/styles/app.css */
+/* CREATE THIS NEW FILE WITH ALL YOUR STYLES */
+
+:root {
+  --border: #000;
+  --bg: #fff;
+  --bg-2: #f6f6f6;
+  --text: #111;
+  --shadow: 4px 4px 0 var(--border);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app {
+  height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid var(--border);
+  background: var(--bg);
+}
+
+.panel {
+  border-bottom: 2px solid var(--border);
+  padding: 14px;
+}
+
+.panel.grow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #555;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+/* Provider segmented buttons */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.segBtn {
+  border: 2px solid var(--border);
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: var(--shadow);
+  background: var(--bg-2);
+  font-weight: 800;
+}
+
+.segBtn input {
+  display: none;
+}
+
+.segBtn.active {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Text inputs (Granite model) */
+.field {
+  margin-bottom: 10px;
+}
+
+.label {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.textInput {
+  width: 100%;
+  border: 2px solid var(--border);
+  padding: 10px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: inset 2px 2px 0 var(--border);
+}
+
+.textInput::placeholder {
+  color: #cfcfcf;
+}
+
+/* ModelProviderSelector Styles */
+.provider-selector .field {
+  margin-bottom: 10px;
+}
+
+.provider-selector .label {
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  display: block;
+  color: var(--text);
+}
+
+.provider-selector select,
+.provider-select,
+.model-select {
+  width: 100%;
+  border: 2px solid var(--border);
+  padding: 8px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.provider-selector select:focus,
+.provider-select:focus,
+.model-select:focus {
+  outline: none;
+  background: var(--text);
+  color: var(--bg);
+}
+
+.provider-selector select:disabled,
+.provider-select:disabled,
+.model-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Current selection display */
+.current-selection {
+  margin-top: 10px;
+  padding: 8px;
+  border: 2px solid var(--border);
+  background: var(--bg-2);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.selection-title {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.selection-model {
+  font-size: 11px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.selection-details {
+  font-size: 10px;
+  color: #777;
+  margin-top: 1px;
+}
+
+/* Uploads */
+.upload {
+  width: 100%;
+  border: 2px dashed var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  padding: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.upload:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.upload:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.files {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid var(--border);
+  padding: 6px 8px;
+  box-shadow: var(--shadow);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.fileName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-right: 8px;
+}
+
+.removeFile {
+  border: 2px solid var(--border);
+  background: var(--text);
+  color: var(--bg);
+  width: 28px;
+  height: 24px;
+  border-radius: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.removeFile:hover {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+.ingestFiles {
+  width: 100%;
+  border: 2px solid var(--border);
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.ingestFiles:hover {
+  background: #333;
+}
+
+.clearChat {
+  width: 100%;
+  border: 2px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  padding: 8px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.clearChat:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Resize Handle */
+.resizeHandle {
+  width: 10px;
+  background: var(--bg);
+  border-right: 2px solid var(--border);
+  border-left: 2px solid var(--border);
+  cursor: col-resize;
+  position: relative;
+}
+
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 18px;
+  height: 54px;
+  background: #ddd;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Main */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  background: var(--bg-2);
+}
+
+.message {
+  position: relative;
+  max-width: clamp(260px, 75%, 820px);
+  padding: 0;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+  line-height: 1.5;
+}
+
+.content {
+  padding: 12px 16px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.message.bot {
+  align-self: flex-start;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Input Area */
+.inputArea {
+  border-top: 2px solid var(--border);
+  padding: 12px;
+  background: var(--bg);
+}
+
+.inputWrapper {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.messageInput {
+  border: 2px solid var(--border);
+  padding: 10px;
+  resize: none;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: inset 2px 2px 0 var(--border);
+  font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+}
+
+.messageInput:disabled {
+  opacity: 0.6;
+}
+
+.messageInput::placeholder {
+  color: #cfcfcf;
+}
+
+.sendButton {
+  border: 2px solid var(--border);
+  padding: 0 16px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Instructions textarea */
+.instructions {
+  width: 100%;
+  border: 2px solid var(--border);
+  padding: 8px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: inset 2px 2px 0 var(--border);
+  font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.instructions::placeholder {
+  color: #cfcfcf;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modalContent {
+  width: min(640px, 92vw);
+  background: var(--bg);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  color: var(--text);
+}
+
+.modalTitle {
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.progressBar {
+  height: 28px;
+  border: 2px solid var(--border);
+  background: var(--bg-2);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--text);
+  transition: width 200ms steps(6, end);
+}
+
+.progressText {
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.modalActions {
+  margin-top: 12px;
+}
+
+.modalButton {
+  border: 2px solid var(--border);
+  padding: 8px 16px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.modalButton:hover {
+  background: #333;
+}
