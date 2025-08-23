@@ -1,8 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+interface ChatMessage {
+  message: string;
+  providerId: string;
+  modelId: string;
+}
+
 const electronAPI = {
   chat: {
-    sendMessage: (message: string) => ipcRenderer.invoke('chat:send-message', message),
+    sendMessage: (messageData: ChatMessage) => ipcRenderer.invoke('chat:send-message', messageData),
     uploadDocument: (filePath: string) => ipcRenderer.invoke('chat:upload-document', filePath)
   }
 };

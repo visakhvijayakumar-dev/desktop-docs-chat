@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useProviderStore } from './providerStore';
 
 export interface Message {
   id: string;
@@ -75,7 +76,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       
       addMessage(content, 'user');
       
-      const response = await window.electronAPI.chat.sendMessage(content);
+      // Get current provider and model selection
+      const providerState = useProviderStore.getState();
+      const providerId = providerState.selectedProvider?.id || null;
+      const modelId = providerState.selectedModel?.id || null;
+      
+      if (!providerId || !modelId) {
+        throw new Error('Please select an AI provider and model before sending a message');
+      }
+      
+      const response = await window.electronAPI.chat.sendMessage({
+        message: content,
+        providerId,
+        modelId
+      });
       
       if (response?.message) {
         addMessage(response.message, 'assistant');

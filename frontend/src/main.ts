@@ -61,14 +61,14 @@ app.on('window-all-closed', () => {
   }
 });
 
-ipcMain.handle('chat:send-message', async (_, message: string) => {
+ipcMain.handle('chat:send-message', async (_, messageData: { message: string, providerId: string, modelId: string }) => {
   try {
     const response = await fetch('http://localhost:3010/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(messageData),
     });
 
     if (!response.ok) {
